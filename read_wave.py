@@ -31,55 +31,89 @@ import sys
 from datetime import datetime
 import time
 import struct
-import tableprint
+import json
+import paho.mqtt.publish as publish
+import logging
+import os
+
+# Read environment
+mqtt_host = os.getenv('MQTT_HOST')
+mqtt_port = os.getenv('MQTT_PORT', 1883)
+mqtt_user = os.getenv('MQTT_USER')
+mqtt_pass = os.getenv('MQTT_PASS')
+mqtt_topic_lt = os.getenv('MQTT_TOPIC_RADON_LT')
+mqtt_topic_st = os.getenv('MQTT_TOPIC_RADON_ST')
+mqtt_topic_t = os.getenv('MQTT_TOPIC_RADON_TEMPERATURE')
+mqtt_topic_h = os.getenv('MQTT_TOPIC_RADON_HUMIDITY')
+mqtt_topic_l = os.getenv('MQTT_TOPIC_RADON_LIGHT')
+aw_serial = os.getenv('AW_SERIAL')
+json_file = os.getenv('JSON_PATH')
+
+wavemon_logfile = os.getenv('WM_LOGFILE')
+
+# Set up logging
+if wavemon_logfile != "None":
+    logging.basicConfig(level=logging.DEBUG, filename=wavemon_logfile, filemode='w', format='%(name)s - %(asctime)s - %(levelname)s - %(message)s')
+else:
+    logging.basicConfig(level=logging.DEBUG)
+
+# Log environment
+logging.info("Config: MQTT_HOST resolved to %s", mqtt_host)
+logging.info("Config: JSON_FILE resolved to %s", wavemon_logfile)
+logging.info("Config: WM_LOGFILE resolved to %s", wavemon_logfile)
+
+# Use mqtt ?
+def publish_mqtt(w_st,w_lt,w_temp,w_humidity,w_light):
+    logging.info("MQTT publishing enabled")
+
+    # Log extended environment for MQTT
+    logging.info("Config: MQTT_PORT resolved to %s", mqtt_port)
+    logging.info("Config: MQTT_USER resolved to %s", mqtt_user)
+    # logging.info("Config: MQTT_PASS resolved to ", mqtt_pass)
+    logging.info("Config: MQTT_TOPIC_RADON_LT resolved to %s", mqtt_topic_lt)
+    logging.info("Config: MQTT_TOPIC_RADON_ST resolved to %s", mqtt_topic_st)
+    logging.info("Config: MQTT_TOPIC_RADON_TEMPERATURE resolved to %s", mqtt_topic_t)
+    logging.info("Config: MQTT_TOPIC_RADON_HUMIDITY resolved to %s", mqtt_topic_h)
+    logging.info("Config: MQTT_TOPIC_RADON_LIGHT resolved to %s", mqtt_topic_l)
+    
+    mqtt_msgs = []
+    mqtt_auth = None
+    if mqtt_user != None:
+        mqtt_auth = {'username':mqtt_user, 'password':mqtt_pass}
+    if mqtt_topic_lt != None:
+        mqtt_msgs.append((mqtt_topic_lt,w_lt,1,False))
+    if mqtt_topic_st != None:
+        mqtt_msgs.append((mqtt_topic_st,w_st,1,False))
+    if mqtt_topic_t != None:
+        mqtt_msgs.append((mqtt_topic_t,w_temp,1,False))
+    if mqtt_topic_h != None:
+        mqtt_msgs.append((mqtt_topic_h,w_humidity,1,False))
+    try:
+        publish.multiple(mqtt_msgs, hostname=mqtt_host, port=mqtt_port, client_id="wavemon", auth=mqtt_auth, tls=None)
+    except Exception as ex:
+        logging.error('Exception while publishing to MQTT broker: {}'.format(ex))
+
+# Use json-file ?
+# if json_path != None:
+#     logging.info("JSON-file publishing enabled")
+
+
 
 # ===============================
 # Script guards for correct usage
 # ===============================
 
-if len(sys.argv) < 3:
-    print "ERROR: Missing input argument SN or SAMPLE-PERIOD."
-    print "USAGE: read_waveplus.py SN SAMPLE-PERIOD [pipe > yourfile.txt]"
-    print "    where SN is the 10-digit serial number found under the magnetic backplate of your Wave Plus."
-    print "    where SAMPLE-PERIOD is the time in seconds between reading the current values."
-    print "    where [pipe > yourfile.txt] is optional and specifies that you want to pipe your results to yourfile.txt."
+if aw_serial == None:
+    logging.info("Missing AW_SERIAL");
     sys.exit(1)
 
-if sys.argv[1].isdigit() is not True or len(sys.argv[1]) != 10:
-    print "ERROR: Invalid SN format."
-    print "USAGE: read_waveplus.py SN SAMPLE-PERIOD [pipe > yourfile.txt]"
-    print "    where SN is the 10-digit serial number found under the magnetic backplate of your Wave Plus."
-    print "    where SAMPLE-PERIOD is the time in seconds between reading the current values."
-    print "    where [pipe > yourfile.txt] is optional and specifies that you want to pipe your results to yourfile.txt."
+if len(aw_serial) < 3:
+    logging.info("Missing AW_SERIAL");
     sys.exit(1)
 
-if sys.argv[2].isdigit() is not True or int(sys.argv[2])<0:
-    print "ERROR: Invalid SAMPLE-PERIOD. Must be a numerical value larger than zero."
-    print "USAGE: read_waveplus.py SN SAMPLE-PERIOD [pipe > yourfile.txt]"
-    print "    where SN is the 10-digit serial number found under the magnetic backplate of your Wave Plus."
-    print "    where SAMPLE-PERIOD is the time in seconds between reading the current values."
-    print "    where [pipe > yourfile.txt] is optional and specifies that you want to pipe your results to yourfile.txt."
+if aw_serial.isdigit() is not True or len(aw_serial) != 10:
+    logging.info("AW_SERIAL has invalid format");
     sys.exit(1)
-
-if len(sys.argv) > 3:
-    Mode = sys.argv[3].lower()
-else:
-    Mode = 'terminal' # (default) print to terminal 
-
-if Mode!='pipe' and Mode!='terminal':
-    print "ERROR: Invalid piping method."
-    print "USAGE: read_waveplus.py SN SAMPLE-PERIOD [pipe > yourfile.txt]"
-    print "    where SN is the 10-digit serial number found under the magnetic backplate of your Wave Plus."
-    print "    where SAMPLE-PERIOD is the time in seconds between reading the current values."
-    print "    where [pipe > yourfile.txt] is optional and specifies that you want to pipe your results to yourfile.txt."
-    sys.exit(1)
-
-SerialNumber = int(sys.argv[1])
-SamplePeriod = int(sys.argv[2])
-
-# ====================================
-# Utility functions for WavePlus class
-# ====================================
 
 def parseSerialNumber(ManuDataHexStr):
     if (ManuDataHexStr == "None"):
@@ -136,11 +170,11 @@ class Wave():
             for dev in devices:
                 ManuData = dev.getValueText(255)
                 SN = parseSerialNumber(ManuData)
-                if (SN == SerialNumber):
+                if (SN == int(aw_serial)):
                     MacAddr = dev.addr
                     deviceFound  = True # exits the while loop on next conditional check
                     break # exit for loop
-        
+
         if (deviceFound is not True):
             print "ERROR: Could not find device."
             print "GUIDE: (1) Please verify the serial number. (2) Ensure that the device is advertising. (3) Retry connection."
@@ -176,10 +210,10 @@ class Wave():
                 data    = struct.unpack('H', rawdata)[0] * 1.0
                 unit    = " Bq/m3"
         else:
-            print "ERROR: Unkown sensor ID or device not paired"
-            print "GUIDE: (1) method connect() must be called first, (2) Ensure correct sensor_idx input value."
+            logging.error("ERROR: Unkown sensor ID or device not paired")
+            logging.error("GUIDE: (1) method connect() must be called first, (2) Ensure correct sensor_idx input value.")
             sys.exit(1)
-        return str(data)+unit
+        return str(data)
     
     def disconnect(self):
         if self.periph is not None:
@@ -192,40 +226,24 @@ class Wave():
             self.radon_lt_avg_char = None
 
 try:
-    #---- Connect to device ----#
-    wave = Wave(SerialNumber)
-    wave.connect()
-    
-    if (Mode=='terminal'):
-        print "\nPress ctrl-C to exit program\n"
-    
-    print "Device serial number: %s" %(SerialNumber)
-    
-    header = ['Datetime', 'Humidity', 'Temperature', 'Radon ST avg', 'Radon LT avg']
-    
-    if (Mode=='terminal'):
-        print tableprint.header(header, width=20)
-    elif (Mode=='pipe'):
-        print header
 
-    while True:
-        
-        # read current values
-        date_time    = wave.read(SENSOR_IDX_DATETIME)
-        humidity     = wave.read(SENSOR_IDX_HUMIDITY)
-        temperature  = wave.read(SENSOR_IDX_TEMPERATURE)
-        radon_st_avg = wave.read(SENSOR_IDX_RADON_ST_AVG)
-        radon_lt_avg = wave.read(SENSOR_IDX_RADON_LT_AVG)
-        
-        data = [date_time, humidity, temperature, radon_st_avg, radon_lt_avg]
-        
-        # Print data
-        if (Mode=='terminal'):
-            print tableprint.row(data, width=20)
-        elif (Mode=='pipe'):
-            print data
-            
-        time.sleep(SamplePeriod)
-            
+    #---- Connect to device ----#
+    wave = Wave(aw_serial)
+    wave.connect()
+
+    # read current values
+    date_time    = wave.read(SENSOR_IDX_DATETIME)
+    humidity     = wave.read(SENSOR_IDX_HUMIDITY)
+    temperature  = wave.read(SENSOR_IDX_TEMPERATURE)
+    radon_st_avg = wave.read(SENSOR_IDX_RADON_ST_AVG)
+    radon_lt_avg = wave.read(SENSOR_IDX_RADON_LT_AVG)
+
+    if mqtt_host != None:
+        publish_mqtt(radon_st_avg,radon_lt_avg,temperature,humidity,0)
+
+except Exception as ex:
+    logging.error('Exception while communicating with wave: {}'.format(ex))
+
 finally:
     wave.disconnect()
+
