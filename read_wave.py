@@ -27,12 +27,13 @@
 # ===============================
 
 from bluepy.btle import UUID, Peripheral, Scanner, DefaultDelegate
-import sys
 from datetime import datetime
+import paho.mqtt.publish as publish
+
+import sys
 import time
 import struct
 import json
-import paho.mqtt.publish as publish
 import logging
 import os
 
@@ -50,6 +51,7 @@ aw_serial = os.getenv('AW_SERIAL')
 json_file = os.getenv('JSON_PATH')
 
 wavemon_logfile = os.getenv('WM_LOGFILE')
+wavemon_interval_s = os.getenv('VM_INTERVAL_S')
 
 # Set up logging
 if wavemon_logfile != "None":
@@ -61,9 +63,23 @@ else:
 logging.info("Config: MQTT_HOST resolved to %s", mqtt_host)
 logging.info("Config: JSON_FILE resolved to %s", wavemon_logfile)
 logging.info("Config: WM_LOGFILE resolved to %s", wavemon_logfile)
+logging.info("Config: WM_INTERVAL_S resolved to %s", wavemon_interval_s)
 
-# Use mqtt ?
-def publish_mqtt(w_st,w_lt,w_temp,w_humidity,w_light):
+if wavemon_interval_s == None:
+    logging.info("AW_INTERVAL_S defaulted to 300s (5m)");
+    wavemon_interval_s = "300"
+
+if wavemon_interval_s.isdigit() is not True:
+    logging.info("AW_INTERVAL_S must be numerical");
+    sys.exit(1)
+else:
+    wavemon_interval_s = int(wavemon_interval_s)
+
+if wavemon_interval_s < 30:
+    logging.info("AW_INTERVAL_S cannot be lower than 30s");
+    sys.exit(1)
+
+if mqtt_host != None:
     logging.info("MQTT publishing enabled")
 
     # Log extended environment for MQTT
@@ -75,6 +91,8 @@ def publish_mqtt(w_st,w_lt,w_temp,w_humidity,w_light):
     logging.info("Config: MQTT_TOPIC_RADON_TEMPERATURE resolved to %s", mqtt_topic_t)
     logging.info("Config: MQTT_TOPIC_RADON_HUMIDITY resolved to %s", mqtt_topic_h)
     logging.info("Config: MQTT_TOPIC_RADON_LIGHT resolved to %s", mqtt_topic_l)
+
+def publish_mqtt(w_st,w_lt,w_temp,w_humidity,w_light):
     
     mqtt_msgs = []
     mqtt_auth = None
@@ -225,25 +243,32 @@ class Wave():
             self.radon_st_avg_char = None
             self.radon_lt_avg_char = None
 
-try:
+while True:
+    start = datetime.now()
+    try:
+        #---- Connect to device ----#
+        wave = Wave(aw_serial)
+        wave.connect()
 
-    #---- Connect to device ----#
-    wave = Wave(aw_serial)
-    wave.connect()
+        # read current values
+        date_time    = wave.read(SENSOR_IDX_DATETIME)
+        humidity     = wave.read(SENSOR_IDX_HUMIDITY)
+        temperature  = wave.read(SENSOR_IDX_TEMPERATURE)
+        radon_st_avg = wave.read(SENSOR_IDX_RADON_ST_AVG)
+        radon_lt_avg = wave.read(SENSOR_IDX_RADON_LT_AVG)
 
-    # read current values
-    date_time    = wave.read(SENSOR_IDX_DATETIME)
-    humidity     = wave.read(SENSOR_IDX_HUMIDITY)
-    temperature  = wave.read(SENSOR_IDX_TEMPERATURE)
-    radon_st_avg = wave.read(SENSOR_IDX_RADON_ST_AVG)
-    radon_lt_avg = wave.read(SENSOR_IDX_RADON_LT_AVG)
+        if mqtt_host != None:
+            publish_mqtt(radon_st_avg,radon_lt_avg,temperature,humidity,0)
 
-    if mqtt_host != None:
-        publish_mqtt(radon_st_avg,radon_lt_avg,temperature,humidity,0)
+    except Exception as ex:
+        logging.error('Exception while communicating with wave: {}'.format(ex))
 
-except Exception as ex:
-    logging.error('Exception while communicating with wave: {}'.format(ex))
-
-finally:
-    wave.disconnect()
-
+    finally:
+        wave.disconnect()
+    diff = datetime.now() - start
+    elapsed_ms = (diff.days * 86400000) + (diff.seconds * 1000) + (diff.microseconds / 1000)
+    sleep_s = (wavemon_interval_s)-(elapsed_ms/1000)
+    if sleep_s < 10:
+        sleep_s = 10
+    logging.info('Round done, sleeping %fs until next interval.', sleep_s) 
+    time.sleep( sleep_s )
