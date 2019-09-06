@@ -6,13 +6,13 @@ Dockerized client that reads airthings wave, and sends the result to a MQTT brok
 
 # Development setup
 
-1. First, setup docker and bluez on the host computer.
+1. First, setup docker and bluez on the host.
 
 2. Get the code.
 
 ```bash
 git checkout https://github.com/Hexagon/wave-mqtt-bridge.git
-cd wave-mqtt-bridge.git
+cd wave-mqtt-bridge
 ```
 
 3. Build docker image
@@ -23,13 +23,13 @@ docker build -q . --tag="wave-mqtt-bridge"
 
 4. Create docker container
 
-wave-mqtt-bridge is configured by passing environment variables to the docker container. AW_SERIAL (Airthings wave 10-digit serial number) and MQTT_HOST and at leasy one of MQTT_TOPIC_RADON_* is mandatory for a working setup.
+wave-mqtt-bridge is configured by passing environment variables to the docker container. AW_SERIAL (Airthings wave 10-digit serial number) and MQTT_HOST and at least one of MQTT_TOPIC_RADON_* is mandatory for a working setup.
 
-## Available environment varhiables
+Available environment varhiables
 
 Variable | Default
 --- | ---
-AW_SEIRAL | -
+AW_SERIAL | -
 AW_INTERVAL_S | 60
 MQTT_HOST | -
 MQTT_PORT | -
