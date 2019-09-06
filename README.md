@@ -30,7 +30,7 @@ Available environment varhiables
 Variable | Default
 --- | ---
 AW_SERIAL | -
-AW_INTERVAL_S | 60
+AW_INTERVAL_S | 300
 MQTT_HOST | -
 MQTT_PORT | -
 MQTT_USER | -
