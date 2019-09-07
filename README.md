@@ -30,7 +30,7 @@ These environment variables can be changed to customize your setup
 
 Variable | Default
 --- | ---
-AW_SEIRAL | -
+AW_SERIAL | -
 AW_INTERVAL_S | 300
 AW_TYPE | WAVE
 MQTT_HOST | -
