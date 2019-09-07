@@ -8,26 +8,26 @@ NOTE! Wave Plus is untested, please test and report back whether it works or not
 
 # Development setup
 
-## Setup docker and bluez on the host computer, detailed walk through available at https://github.com/Airthings/wave-reader.
+Setup docker and bluez on the host computer, detailed walk through available at https://github.com/Airthings/wave-reader.
 
-## Get the code.
+Get the code.
 
 ```bash
 git checkout https://github.com/Hexagon/wave-mqtt-bridge.git
 cd wave-mqtt-bridge
 ```
 
-## Build docker image
+Build docker image
 
 ```bash
 docker build -q . --tag="wave-mqtt-bridge"
 ```
 
-## Create docker container
+Create docker container
 
 wave-mqtt-bridge is configured by passing environment variables to the docker container. AW_TYPE (WAVE or WAVEPLUS), AW_SERIAL (Airthings wave 10-digit serial number), MQTT_HOST and at leasy one of MQTT_TOPIC_* is mandatory for a working setup.
 
-### Available environment varhiables
+Available environment variables
 
 Variable | Default
 --- | ---
@@ -65,6 +65,8 @@ docker run \
 ```
 
 ## Debug
+
+This assumes you've named your container "wave-monitor"
 
 ```bash
 docker logs wave-monitor
