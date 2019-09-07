@@ -25,7 +25,7 @@ docker build -q . --tag="wave-mqtt-bridge"
 
 ## Create docker container
 
-wave-mqtt-bridge is configured by passing environment variables to the docker container. AW_TYPE (WAVE or WAVEPLUS), AW_SERIAL (Airthings wave 10-digit serial number), MQTT_HOST and at leasy one of MQTT_TOPIC_RADON_* is mandatory for a working setup.
+wave-mqtt-bridge is configured by passing environment variables to the docker container. AW_TYPE (WAVE or WAVEPLUS), AW_SERIAL (Airthings wave 10-digit serial number), MQTT_HOST and at leasy one of MQTT_TOPIC_* is mandatory for a working setup.
 
 ### Available environment varhiables
 
