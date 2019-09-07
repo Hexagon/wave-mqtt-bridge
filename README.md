@@ -14,7 +14,7 @@ NOTE! Wave Plus is untested, please test and report back whether it works or not
 
 ```bash
 git checkout https://github.com/Hexagon/wave-mqtt-bridge.git
-cd wave-mqtt-bridge.git
+cd wave-mqtt-bridge
 ```
 
 ## Build docker image
