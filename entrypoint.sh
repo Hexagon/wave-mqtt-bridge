@@ -1,3 +1,3 @@
 #!/bin/sh
 
-python2 /wavemon/read_wave.py
+python2 /wave-mqtt-bridge/wave-mqtt-bridge.py
