@@ -6,28 +6,29 @@ Dockerized client that reads airthings wave/wave plus, and sends the result to a
 
 NOTE! Wave Plus is untested, please test and report back whether it works or not.
 
-# Development setup
+# Getting started
 
 Setup docker and bluez on the host computer, detailed walk through available at https://github.com/Airthings/wave-reader.
 
-Get the code.
+When bluetooth and docker is working, a single command will install and start wave-mqtt-bridge.
 
 ```bash
-git checkout https://github.com/Hexagon/wave-mqtt-bridge.git
-cd wave-mqtt-bridge
+docker run \
+	-d \
+	--net=host \
+	--restart=always \
+	-e AW_TYPE="WAVE" \
+	-e AW_SERIAL=0000000000 \
+	-e MQTT_HOST=X.Y.Z.N \
+	-e MQTT_TOPIC_RADON_ST="sensor/radon/st" \
+	-e MQTT_TOPIC_TEMPERATURE="sensor/radon/temp" \
+	-e MQTT_TOPIC_HUMIDITY="sensor/radon/humidity" \
+	--privileged \
+	--name="wave-monitor" \
+	hexagon/wave-mqtt-bridge
 ```
-
-Build docker image
-
-```bash
-docker build -q . --tag="wave-mqtt-bridge"
-```
-
-Create docker container
 
 wave-mqtt-bridge is configured by passing environment variables to the docker container. AW_TYPE (WAVE or WAVEPLUS), AW_SERIAL (Airthings wave 10-digit serial number), MQTT_HOST and at leasy one of MQTT_TOPIC_* is mandatory for a working setup.
-
-Available environment variables
 
 Variable | Default
 --- | ---
@@ -46,7 +47,32 @@ MQTT_TOPIC_PRESSURE | -
 MQTT_TOPIC_CO2 | -
 MQTT_TOPIC_VOC | -
 
-Example container setup
+
+## Debugging
+
+This assumes you've named your container "wave-monitor"
+
+```bash
+docker logs wave-monitor
+```
+
+
+# Development setup
+
+Get the code.
+
+```bash
+git checkout https://github.com/Hexagon/wave-mqtt-bridge.git
+cd wave-mqtt-bridge
+```
+
+Build docker image
+
+```bash
+docker build -q . --tag="wave-mqtt-bridge"
+```
+
+Create docker container
 
 ```bash
 docker run \
@@ -62,12 +88,4 @@ docker run \
 	--privileged \
 	--name="wave-monitor" \
 	wave-mqtt-bridge
-```
-
-## Debug
-
-This assumes you've named your container "wave-monitor"
-
-```bash
-docker logs wave-monitor
 ```
