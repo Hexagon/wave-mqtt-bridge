@@ -33,7 +33,7 @@ wave-mqtt-bridge is configured by passing environment variables to the docker co
 Variable | Default
 --- | ---
 AW_SEIRAL | -
-AW_INTERVAL_S | 300
+WM_INTERVAL_S | 300
 AW_TYPE | WAVE
 MQTT_HOST | -
 MQTT_PORT | -

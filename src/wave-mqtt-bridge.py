@@ -46,7 +46,7 @@ mqtt_topic_v = os.getenv('MQTT_TOPIC_VOC')
 aw_serial = os.getenv('AW_SERIAL')
 aw_type = os.getenv('AW_TYPE')
 wavemon_logfile = os.getenv('WM_LOGFILE')
-wavemon_interval_s = os.getenv('VM_INTERVAL_S')
+wavemon_interval_s = os.getenv('WM_INTERVAL_S')
 
 # Set up logging
 if wavemon_logfile != "None":
@@ -61,17 +61,17 @@ logging.info("Config: WM_INTERVAL_S resolved to %s", wavemon_interval_s)
 
 # Check environment variables
 if wavemon_interval_s == None:
-    logging.info("AW_INTERVAL_S defaulted to 300s (5m)");
+    logging.info("WM_INTERVAL_S defaulted to 300s (5m)");
     wavemon_interval_s = "300"
 
 if wavemon_interval_s.isdigit() is not True:
-    logging.info("AW_INTERVAL_S must be numerical");
+    logging.info("WM_INTERVAL_S must be numerical");
     sys.exit(1)
 else:
     wavemon_interval_s = int(wavemon_interval_s)
 
 if wavemon_interval_s < 30:
-    logging.info("AW_INTERVAL_S cannot be lower than 30s");
+    logging.info("WM_INTERVAL_S cannot be lower than 30s");
     sys.exit(1)
 
 if aw_serial == None:
@@ -159,7 +159,7 @@ while True:
     # User Wave Plus
     if aw_type == "WAVEPLUS": 
         try:
-            wp = waveplus.WavePlus(SerialNumber)
+            wp = waveplus.WavePlus(aw_serial)
                 
             wp.connect()
             
