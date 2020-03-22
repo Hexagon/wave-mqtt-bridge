@@ -90,6 +90,10 @@ if aw_type != "WAVE" and aw_type != "WAVEPLUS":
     logging.error("AW_TYPE defaulting to WAVE")
     aw_TYPE = "WAVE"
 
+# Log wave
+logging.info("Config: AW_SERIAL resolved to %s", aw_serial)
+logging.info("Config: AW_TYPE resolved to %s", aw_type)
+
 if mqtt_host != None:
     logging.info("MQTT publishing enabled")
 
@@ -160,7 +164,6 @@ while True:
     if aw_type == "WAVEPLUS": 
         try:
             wp = waveplus.WavePlus(aw_serial)
-                
             wp.connect()
             
             # read values
@@ -178,7 +181,6 @@ while True:
             
             # Print data
             if mqtt_host != None:
-                publish_mqtt(radon_st_avg,radon_lt_avg,temperature,humidity,pressure,CO2_lvl,VOC_lvl)
                 publish_mqtt(radon_st_avg,radon_lt_avg,temperature,humidity,pressure,CO2_lvl,VOC_lvl)
 
         except Exception as ex:
