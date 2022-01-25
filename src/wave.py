@@ -42,7 +42,7 @@ SENSOR_IDX_RADON_ST_AVG  = 3
 SENSOR_IDX_RADON_LT_AVG  = 4
 
 def parseSerialNumber(ManuDataHexStr):
-    if (ManuDataHexStr == "None"):
+    if (ManuDataHexStr == None):
         SN = "Unknown"
     else:
         ManuData = bytearray.fromhex(ManuDataHexStr)

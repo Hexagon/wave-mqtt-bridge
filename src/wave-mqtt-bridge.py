@@ -131,7 +131,7 @@ def publish_mqtt(w_st,w_lt,w_temp,w_humidity,w_pressure,w_co2,w_voc):
         logging.error('Exception while publishing to MQTT broker: {}'.format(ex))
 
 while True:
-    
+
     start = datetime.now()
 
     # Use regular Wave
@@ -157,15 +157,15 @@ while True:
 
 
     # User Wave Plus
-    if aw_type == "WAVEPLUS": 
+    if aw_type == "WAVEPLUS":
         try:
             wp = waveplus.WavePlus(SerialNumber)
-                
+
             wp.connect()
-            
+
             # read values
             sensors = wp.read()
-            
+
             # extract
             date_time    = datetime.now()
             humidity     = sensors.getValue(waveplus.SENSOR_IDX_HUMIDITY)
@@ -175,7 +175,7 @@ while True:
             pressure     = sensors.getValue(waveplus.SENSOR_IDX_REL_ATM_PRESSURE)
             CO2_lvl      = sensors.getValue(waveplus.SENSOR_IDX_CO2_LVL)
             VOC_lvl      = sensors.getValue(waveplus.SENSOR_IDX_VOC_LVL)
-            
+
             # Print data
             if mqtt_host != None:
                 publish_mqtt(radon_st_avg,radon_lt_avg,temperature,humidity,pressure,CO2_lvl,VOC_lvl)
@@ -183,7 +183,7 @@ while True:
 
         except Exception as ex:
             logging.error('Exception while communicating with wave plus: {}'.format(ex))
-                        
+
         finally:
             wp.disconnect()
 
@@ -197,6 +197,5 @@ while True:
     if sleep_s < 10:
         sleep_s = 10
 
-    logging.info('Round done, sleeping %fs until next interval.', sleep_s) 
+    logging.info('Round done, sleeping %fs until next interval.', sleep_s)
     time.sleep( sleep_s )
-
